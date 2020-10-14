@@ -17,6 +17,31 @@ class Movies extends Component {
     sortColumn: { path: "title", order: "asc" },
   };
 
+  getPaginatedData = () => {
+    const {
+      movies,
+      pageSize,
+      currentPage,
+      currentGenre,
+      sortColumn,
+    } = this.state;
+
+    let filteredMovies = movies.filter((m) => {
+      if (currentGenre._id === "0") return true;
+      return currentGenre._id === m.genre._id;
+    });
+
+    const sortedMovies = orderBy(
+      filteredMovies,
+      sortColumn.path,
+      sortColumn.order
+    );
+
+    const paginatedMovies = paginate(sortedMovies, currentPage, pageSize);
+
+    return { totalCount: filteredMovies.length, movies: paginatedMovies };
+  };
+
   componentDidMount = () => {
     const currentGenre = { _id: "0", name: "All Genres" };
     const genres = [currentGenre, ...getGenres()];
@@ -30,7 +55,6 @@ class Movies extends Component {
   };
 
   handleLike = (movie) => {
-    console.log("movies.jsx handleLike movie", movie);
     const movies = [...this.state.movies];
     const index = movies.indexOf(movie);
     movies[index].liked = !movies[index].liked;
@@ -51,30 +75,11 @@ class Movies extends Component {
   };
 
   render() {
-    const {
-      movies,
-      pageSize,
-      currentPage,
-      genres,
-      currentGenre,
-      sortColumn,
-    } = this.state;
+    const { pageSize, currentPage, genres, currentGenre } = this.state;
+    const { totalCount, movies } = this.getPaginatedData();
 
-    let filteredMovies = movies.filter((m) => {
-      if (currentGenre._id === "0") return true;
-      return currentGenre._id === m.genre._id;
-    });
-    const count = filteredMovies.length;
+    if (totalCount === 0) return <p>There are no movies in the database.</p>;
 
-    const sortedMovies = orderBy(
-      filteredMovies,
-      sortColumn.path,
-      sortColumn.order
-    );
-
-    const paginatedMovies = paginate(sortedMovies, currentPage, pageSize);
-
-    if (count === 0) return <p>There are no movies in the database.</p>;
     return (
       <div className="row">
         <div className="col-3">
@@ -85,16 +90,16 @@ class Movies extends Component {
           />
         </div>
         <div className="col">
-          <p>Showing {count} movies</p>
+          <p>Showing {totalCount} movies</p>
           <MoviesTable
-            movies={paginatedMovies}
+            movies={movies}
             onDelete={this.handleDelete}
             onLike={this.handleLike}
             onSort={this.handleSort}
             sortColumn={this.state.sortColumn}
           />
           <Pagination
-            itemsCount={count}
+            itemsCount={totalCount}
             pageSize={pageSize}
             onPageChange={this.handlePageChange}
             currentPage={currentPage}
